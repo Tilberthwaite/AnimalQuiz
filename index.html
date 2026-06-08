@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mystery Animal Quiz</title>
+<style>
+  :root{
+    --green:#2fb380; --green-d:#1f8d63; --blue:#3aa0e0; --blue-d:#2176b5;
+    --yellow:#ffc93c; --orange:#ff914d; --pink:#ff6f91; --purple:#8e6bd6;
+    --ink:#234; --cream:#fffaf0; --card:#ffffff;
+    --good:#2fb380; --bad:#ff6f6f;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Comic Sans MS","Chalkboard SE","Trebuchet MS",system-ui,sans-serif;
+    color:var(--ink);
+    min-height:100vh;
+    background:linear-gradient(160deg,#bdeaff 0%,#a9e7c8 45%,#ffe9b0 100%);
+    background-attachment:fixed;
+    padding:16px;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .wrap{max-width:880px;margin:0 auto;}
+  h1,h2,h3{margin:0;}
+  button{font-family:inherit;cursor:pointer;border:none;}
+  .hidden{display:none !important;}
+
+  /* ---------- HOME ---------- */
+  .title{
+    text-align:center; font-size:42px; color:#fff; margin:10px 0 4px;
+    text-shadow:0 3px 0 var(--green-d), 0 6px 14px rgba(0,0,0,.18);
+    letter-spacing:1px;
+  }
+  .subtitle{text-align:center;color:#2c5b4a;font-size:17px;margin-bottom:18px;}
+  .card{
+    background:var(--card); border-radius:24px; padding:24px;
+    box-shadow:0 12px 30px rgba(40,80,70,.18); margin-bottom:18px;
+  }
+  .emoji-row{font-size:34px;text-align:center;letter-spacing:4px;margin:6px 0 14px;}
+  label.fld{display:block;font-size:16px;margin:0 0 6px;color:#456;}
+  input[type=text]{
+    width:100%; font-family:inherit; font-size:20px; padding:12px 16px;
+    border:3px solid #d7e6df; border-radius:16px; outline:none; text-align:center;
+  }
+  input[type=text]:focus{border-color:var(--green);}
+  .levels{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:8px;}
+  .lvl{
+    border-radius:18px; padding:14px 12px; text-align:left; color:#fff;
+    border:4px solid transparent; transition:transform .08s, box-shadow .15s;
+    box-shadow:0 6px 0 rgba(0,0,0,.12);
+  }
+  .lvl:active{transform:translateY(3px);box-shadow:0 3px 0 rgba(0,0,0,.12);}
+  .lvl.sel{border-color:#fff; box-shadow:0 0 0 4px var(--yellow),0 6px 0 rgba(0,0,0,.12);}
+  .lvl .lt{font-size:20px;font-weight:bold;}
+  .lvl .ld{font-size:13px;opacity:.95;line-height:1.25;margin-top:3px;}
+  .lvl .lstars{font-size:14px;margin-top:6px;}
+  .lvl.easy{background:linear-gradient(135deg,#4cc78a,#2fb380);}
+  .lvl.medium{background:linear-gradient(135deg,#4aa9e6,#2176b5);}
+  .lvl.expert{background:linear-gradient(135deg,#b07ce8,#7b51c4);}
+  .lvl.zoologist{background:linear-gradient(135deg,#ff9a4d,#ff6f6f);}
+  .bigbtn{
+    display:block;width:100%;margin-top:16px;font-size:24px;color:#fff;
+    background:linear-gradient(135deg,var(--yellow),var(--orange));
+    padding:16px;border-radius:20px;box-shadow:0 6px 0 #e07a2e;
+    transition:transform .08s, box-shadow .12s;
+  }
+  .bigbtn:active{transform:translateY(4px);box-shadow:0 2px 0 #e07a2e;}
+  .ghostbtn{
+    background:#eef4f1;color:#456;border-radius:14px;padding:10px 14px;font-size:15px;
+  }
+  .parent-note{font-size:13px;color:#5a6b66;text-align:center;margin-top:10px;line-height:1.4;}
+  .stat-pills{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:6px;}
+  .pill{background:#eef4f1;border-radius:999px;padding:6px 12px;font-size:14px;color:#3a5;}
+
+  /* ---------- TOP BAR ---------- */
+  .topbar{
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    background:#ffffffcc;backdrop-filter:blur(4px);
+    border-radius:18px;padding:10px 14px;margin-bottom:14px;
+    box-shadow:0 8px 20px rgba(40,80,70,.12);
+  }
+  .tb-name{font-weight:bold;font-size:17px;}
+  .tb-spacer{flex:1;}
+  .chip{border-radius:999px;padding:6px 12px;font-size:15px;font-weight:bold;display:flex;align-items:center;gap:5px;}
+  .chip.lvl-chip{color:#fff;}
+  .chip.score{background:#fff3cf;color:#a9700c;}
+  .chip.streak{background:#ffe0e6;color:#c23b5b;}
+  .chip.coll{background:#e3f1ff;color:#1f6fb0;cursor:pointer;}
+  .iconbtn{background:#eef4f1;border-radius:12px;padding:7px 10px;font-size:15px;color:#456;}
+
+  /* ---------- GAME ---------- */
+  .game-grid{display:grid;grid-template-columns:1fr 1.15fr;gap:16px;align-items:start;}
+  @media(max-width:680px){.game-grid{grid-template-columns:1fr;}}
+
+  .reveal-card{text-align:center;}
+  .reveal-wrap{
+    position:relative;width:100%;max-width:320px;margin:0 auto;aspect-ratio:1/1;
+    border-radius:20px;overflow:hidden;background:#eaf6ef;
+    box-shadow:inset 0 0 0 4px #d6ebe0;
+  }
+  .reveal-wrap svg{position:absolute;inset:0;width:100%;height:100%;}
+  .tiles{position:absolute;inset:0;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(3,1fr);}
+  .tile{
+    background:linear-gradient(135deg,#54c08a,#2fa873);
+    border:2px solid #eaf6ef;display:flex;align-items:center;justify-content:center;
+    color:#ffffffcc;font-size:22px;transition:opacity .5s, transform .5s;
+  }
+  .tile.gone{opacity:0;transform:scale(.2) rotate(20deg);pointer-events:none;}
+  .reveal-q{font-size:15px;color:#3a5b4e;margin:10px 0 8px;}
+  .guess-btn{
+    background:linear-gradient(135deg,var(--purple),#6f4bc0);color:#fff;
+    border-radius:16px;padding:12px 16px;font-size:17px;width:100%;max-width:320px;
+    box-shadow:0 5px 0 #573a99;transition:transform .08s,box-shadow .12s;
+  }
+  .guess-btn:active{transform:translateY(3px);box-shadow:0 2px 0 #573a99;}
+
+  .q-card{background:#fff;border-radius:22px;padding:20px;box-shadow:0 12px 30px rgba(40,80,70,.16);}
+  .progress-dots{display:flex;gap:7px;justify-content:center;margin-bottom:12px;}
+  .dot{width:14px;height:14px;border-radius:50%;background:#dde9e3;}
+  .dot.right{background:var(--good);}
+  .dot.wrong{background:var(--bad);}
+  .dot.cur{box-shadow:0 0 0 4px #ffe39c;}
+  .q-text{font-size:21px;line-height:1.3;margin:4px 0 16px;text-align:center;min-height:56px;display:flex;align-items:center;justify-content:center;}
+  .opts{display:grid;gap:10px;}
+  .opt{
+    background:#f3f8f6;border:3px solid #e1ece7;border-radius:16px;padding:14px 16px;
+    font-size:18px;text-align:left;color:var(--ink);transition:transform .06s, background .15s, border-color .15s;
+  }
+  .opt:hover{border-color:#bfe0d2;}
+  .opt:active{transform:scale(.99);}
+  .opt.right{background:#dff5e9;border-color:var(--good);}
+  .opt.wrong{background:#ffe5e5;border-color:var(--bad);}
+  .opt:disabled{cursor:default;}
+  .feedback{margin-top:14px;text-align:center;font-size:16px;min-height:24px;}
+  .feedback .fact{display:block;color:#456;font-size:14px;margin-top:4px;}
+  .nextbtn{
+    display:block;margin:14px auto 0;background:linear-gradient(135deg,var(--green),var(--green-d));
+    color:#fff;border-radius:16px;padding:12px 26px;font-size:18px;box-shadow:0 5px 0 #176a4a;
+    transition:transform .08s,box-shadow .12s;
+  }
+  .nextbtn:active{transform:translateY(3px);box-shadow:0 2px 0 #176a4a;}
+
+  /* ---------- POPUPS ---------- */
+  #confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:60;}
+  .score-pop{
+    position:fixed;left:50%;top:38%;transform:translateX(-50%);
+    font-size:40px;font-weight:bold;color:var(--green-d);z-index:70;pointer-events:none;
+    text-shadow:0 2px 0 #fff,0 0 12px #fff;animation:floatUp 1s ease-out forwards;
+  }
+  @keyframes floatUp{0%{opacity:0;transform:translate(-50%,10px) scale(.6);}20%{opacity:1;}100%{opacity:0;transform:translate(-50%,-60px) scale(1.2);}}
+
+  .modal{position:fixed;inset:0;background:rgba(30,50,45,.55);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px;}
+  .modal-card{background:#fff;border-radius:24px;padding:22px;max-width:560px;width:100%;max-height:88vh;overflow:auto;box-shadow:0 20px 50px rgba(0,0,0,.3);}
+  .modal-title{font-size:24px;text-align:center;margin-bottom:6px;}
+  .modal-sub{text-align:center;color:#567;font-size:15px;margin-bottom:14px;}
+  .guess-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+  .guess-opt{background:#f3f8f6;border:3px solid #e1ece7;border-radius:16px;padding:14px;font-size:18px;display:flex;align-items:center;gap:8px;}
+  .guess-opt .ge{font-size:24px;}
+  .guess-opt.right{background:#dff5e9;border-color:var(--good);}
+  .guess-opt.wrong{background:#ffe5e5;border-color:var(--bad);}
+
+  .coll-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+  @media(max-width:560px){.coll-grid{grid-template-columns:repeat(3,1fr);}}
+  .coll-item{text-align:center;border-radius:16px;padding:8px;background:#f5faf8;}
+  .coll-item svg{width:100%;height:auto;border-radius:12px;background:#eaf6ef;}
+  .coll-item.locked svg{filter:grayscale(1) brightness(.55) contrast(.4);opacity:.5;}
+  .coll-name{font-size:13px;margin-top:5px;font-weight:bold;}
+  .coll-item.locked .coll-name{color:#9aa;}
+  .coll-cat{font-size:11px;color:#789;}
+
+  .badge-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:6px;}
+  @media(max-width:560px){.badge-grid{grid-template-columns:repeat(3,1fr);}}
+  .badge{text-align:center;border-radius:14px;padding:8px 4px;background:#f5faf8;font-size:12px;}
+  .badge .bem{font-size:30px;display:block;}
+  .badge.locked{opacity:.35;filter:grayscale(1);}
+
+  .round-result{text-align:center;}
+  .round-result .big-emoji{font-size:64px;}
+  .roundbtns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px;}
+  .footer-note{text-align:center;color:#5a6b66;font-size:12px;margin-top:18px;}
+</style>
+</head>
+<body>
+<canvas id="confetti"></canvas>
+<div class="wrap">
+
+  <!-- ============ HOME ============ -->
+  <div id="home">
+    <h1 class="title">🐾 Mystery Animal Quiz 🐾</h1>
+    <div class="subtitle">Answer questions, reveal hidden animals, and build your collection!</div>
+
+    <div class="card">
+      <div class="emoji-row">🦁 🐘 🦉 🐙 🐢 🦋</div>
+      <label class="fld" for="nameInput">What's your name, animal expert?</label>
+      <input type="text" id="nameInput" maxlength="14" placeholder="Type your name…" autocomplete="off">
+
+      <h3 style="margin:18px 0 8px;text-align:center;">Pick your challenge level</h3>
+      <div class="levels" id="levelPicker">
+        <button class="lvl easy sel" data-level="easy">
+          <div class="lt">Easy</div>
+          <div class="ld">Fun facts every animal fan knows.</div>
+          <div class="lstars">⭐</div>
+        </button>
+        <button class="lvl medium" data-level="medium">
+          <div class="lt">Medium</div>
+          <div class="ld">A bit trickier — for keen kids.</div>
+          <div class="lstars">⭐⭐</div>
+        </button>
+        <button class="lvl expert" data-level="expert">
+          <div class="lt">Expert</div>
+          <div class="ld">Surprising science & behaviour.</div>
+          <div class="lstars">⭐⭐⭐</div>
+        </button>
+        <button class="lvl zoologist" data-level="zoologist">
+          <div class="lt">Zoologist 🎓</div>
+          <div class="ld">Really hard — even grown-ups struggle!</div>
+          <div class="lstars">⭐⭐⭐⭐</div>
+        </button>
+      </div>
+
+      <button class="bigbtn" id="startBtn">▶ Start Playing</button>
+
+      <div class="stat-pills" id="savedStats"></div>
+      <div class="parent-note">
+        💡 Each correct answer reveals part of a mystery animal. Guess it to add it to your collection!
+        Your progress is saved on this computer. <a href="#" id="resetLink" style="color:#c23b5b;">Reset progress</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ GAME ============ -->
+  <div id="game" class="hidden">
+    <div class="topbar">
+      <span class="tb-name" id="tbName">Player</span>
+      <span class="chip lvl-chip" id="tbLevel">Easy</span>
+      <span class="tb-spacer"></span>
+      <span class="chip score" id="tbScore">⭐ 0</span>
+      <span class="chip streak" id="tbStreak">🔥 0</span>
+      <span class="chip coll" id="tbColl" title="Your collection">📚 0/16</span>
+      <button class="iconbtn" id="homeBtn" title="Back to start">🏠</button>
+      <button class="iconbtn" id="muteBtn" title="Sound on/off">🔊</button>
+    </div>
+
+    <div class="game-grid">
+      <div class="card reveal-card">
+        <h3 style="margin-bottom:8px;">🔍 Mystery Animal</h3>
+        <div class="reveal-wrap" id="revealWrap">
+          <div id="revealSvg"></div>
+          <div class="tiles" id="tiles"></div>
+        </div>
+        <div class="reveal-q" id="revealHint">Reveal the picture by answering correctly…</div>
+        <button class="guess-btn" id="guessBtn">🤔 Guess the animal!</button>
+      </div>
+
+      <div class="q-card">
+        <div class="progress-dots" id="dots"></div>
+        <div class="q-text" id="qText">Question…</div>
+        <div class="opts" id="opts"></div>
+        <div class="feedback" id="feedback"></div>
+        <button class="nextbtn hidden" id="nextBtn">Next →</button>
+      </div>
+    </div>
+    <div class="footer-note">Tip: you can guess the mystery animal at any time — the fewer tiles showing, the bigger the bonus! 🌟</div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   MYSTERY ANIMAL QUIZ
+   Self-contained. No external files. Works offline.
+   ============================================================ */
+
+/* ---------- SVG ANIMALS (the collectibles & mystery pictures) ---------- */
+const A = {}; // animal definitions
+function defAnimal(key,name,cat,emoji,svg){A[key]={key,name,cat,emoji,svg};}
+
+defAnimal("lion","Lion","Mammal","🦁",`
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+ <rect width="100" height="100" fill="#fbe7c2"/>
+ <g>
+  <circle cx="50" cy="52" r="40" fill="#c97f2e"/>
+  <g fill="#a8631c"><circle cx="50" cy="10" r="9"/><circle cx="78" cy="20" r="9"/><circle cx="90" cy="50" r="9"/><circle cx="78" cy="82" r="9"/><circle cx="50" cy="92" r="9"/><circle cx="22" cy="82" r="9"/><circle cx="10" cy="50" r="9"/><circle cx="22" cy="20" r="9"/></g>
+  <circle cx="50" cy="52" r="30" fill="#f0b95e"/>
+  <circle cx="34" cy="40" r="7" fill="#e8a33d"/><circle cx="66" cy="40" r="7" fill="#e8a33d"/>
+  <circle cx="40" cy="48" r="4.5" fill="#3a2a14"/><circle cx="60" cy="48" r="4.5" fill="#3a2a14"/>
+  <circle cx="41.5" cy="46.5" r="1.5" fill="#fff"/><circle cx="61.5" cy="46.5" r="1.5" fill="#fff"/>
+  <path d="M50 56 l-6 6 h12 z" fill="#7a4a1e"/>
+  <path d="M50 62 q-8 8 -16 4 M50 62 q8 8 16 4" stroke="#7a4a1e" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+ </g>
+</svg>`);
+
+defAnimal("elephant","Elephant","Mammal","🐘",`
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+ <rect width="100" height="100" fill="#dfeef2"/>
+ <ellipse cx="55" cy="58" rx="34" ry="30" fill="#9bb3c4"/>
+ <path d="M30 50 q-22 -6 -20 14 q2 14 14 10 q-6 -14 6 -16z" fill="#8aa3b5"/>
+ <path d="M80 50 q22 -6 20 14 q-2 14 -14 10 q6 -14 -6 -16z" fill="#8aa3b5"/>
+ <path d="M50 64 q-4 22 6 28 q10 -2 6 -16 q-2 -8 6 -10" stroke="#8aa3b5" stroke-width="11" fill="none" stroke-linecap="round"/>
+ <path d="M44 86 l4 6 M64 86 l4 6" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+ <circle cx="44" cy="52" r="4" fill="#2c3e50"/><circle cx="68" cy="52" r="4" fill="#2c3e50"/>
+ <circle cx="45" cy="50.5" r="1.3" fill="#fff"/><circle cx="69" cy="50.5" r="1.3" fill="#fff"/>
+</svg>`);
+
+defAnimal("giraffe","Giraffe","Mammal","🦒",`
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+ <rect width="100" height="100" fill="#eaf6d8"/>
+ <rect x="42" y="40" width="16" height="48" rx="7" fill="#f3c651"/>
+ <ellipse cx="50" cy="30" rx="15" ry="13" fill="#f3c651"/>
+ <rect x="40" y="14" width="4" height="9" rx="2" fill="#8a5a2b"/><circle cx="42" cy="13" r="3" fill="#8a5a2b"/>
+ <rect x="56" y="14" width="4" height="9" rx="2" fill="#8a5a2b"/><circle cx="58" cy="13" r="3" fill="#8a5a2b"/>
+ <ellipse cx="50" cy="36" rx="9" ry="7" fill="#f7dca0"/>
+ <circle cx="44" cy="27" r="3" fill="#2c2018"/><circle cx="58" cy="27" r="3" fill="#2c2018"/>
+ <circle cx="42" cy="22" r="3" fill="#2c2018"/><circle cx="60" cy="22" r="3" fill="#2c2018"/>
+ <ellipse cx="46" cy="36" rx="1.6" ry="2.4" fill="#5a3a1a"/><ellipse cx="54" cy="36" rx="1.6" ry="2.4" fill="#5a3a1a"/>
+ <g fill="#cf9333"><circle cx="46" cy="52" r="5"/><circle cx="55" cy="62" r="5"/><circle cx="45" cy="72" r="5"/><circle cx="56" cy="80" r="4"/><circle cx="47" cy="84" r="3.5"/></g>
+</svg>`);
+
+defAnimal("fox","Fox","Mammal","🦊",`
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+ <rect width="100" height="100" fill="#eaf0f5"/>
+ <path d="M22 30 l8 26 l-16 -4z" fill="#e8732e"/><path d="M78 30 l-8 26 l16 -4z" fill="#e8732e"/>
+ <path d="M24 34 l5 17 l-9 -2z" fill="#ffd9c2"/><path d="M76 34 l-5 17 l9 -2z" fill="#ffd9c2"/>
+ <path d="M50 38 q26 4 22 30 q-4 22 -22 24 q-18 -2 -22 -24 q-4 -26 22 -30z" fill="#ef8b3d"/>
+ <path d="M50 60 q-14 4 -16 22 q8 8 16 8 q8 0 16 -8 q-2 -18 -16 -22z" fill="#fff7f0"/>
+ <circle cx="40" cy="56" r="4" fill="#2b2018"/><circle cx="60" cy="56" r="4" fill="#2b2018"/>
+ <circle cx="41" cy="54.5" r="1.3" fill="#fff"/><circle cx="61" cy="54.5" r="1.3" fill="#fff"/>
+ <path d="M50 70 l-5 5 h10 z" fill="#2b2018"/>
+ <path d="M50 75 v6" stroke="#caa" stroke-width="2"/>
+</svg>`);
+
+defAnimal("panda","Panda","Mammal","🐼",`
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+ <rect width="100" height="100" fill="#e7f3ea"/>
+ <circle cx="26" cy="26" r="13" fill="#222"/><circle cx="74" cy="26" r="13" fill="#222"/>
+ <circle cx="50" cy="54" r="36" fill="#fff"/>
+ <ellipse cx="36" cy="50" rx="9" ry="12" fill="#222" transform="rotate(-18 36 50)"/>
+ <ellipse cx="64" cy="50" rx="9" ry="12" fill="#222" transform="rotate(18 64 50)"/>
+ <circle cx="37" cy="50" r="4" fill="#fff"/><circle cx="63" cy="50" r="4" fill="#fff"/>
+ <circle cx="37" cy="51" r="2" fill="#222"/><circle cx="63" cy="51" r="2" fill="#222"/>
+ <ellipse cx="50" cy="64" rx="5" ry="4" fill="#222"/>
+ <path d="M50 68 q-7 7 -13 3 M50 68 q7 7 13 3" stroke="#222" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+</svg>`);
+
+defAnimal("penguin","Penguin","Bird","🐧",`
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+ <rect width="100" height="100" fill="#cdeaf7"/>
+ <ellipse cx="50" cy="56" rx="28" ry="36" fill="#2b2f38"/>
+ <ellipse cx="50" cy="62" rx="18" ry="27" fill="#fff"/>
+ <circle cx="40" cy="40" r="5" fill="#fff"/><circle cx="60" cy="40" r="5" fill="#fff"/>
+ <circle cx="40.5" cy="41" r="2.5" fill="#222"/><circle cx="59.5" cy="41" r="2.5" fill="#222"/>
+ <path d="M50 46 l-6 5 h12 z" fill="#ff9f3c"/>
+ <path d="M30 64 q-9 4 -10 12 M70 64 q9 4 10 12" stroke="#2b2f38" stroke-width="9" fill="none" stroke-linecap="round"/>
+ <path d="M40 90 h12 M52 90 h12" stroke="#ff9f3c" stroke-width="7" stroke-linecap="round"/>
+</svg>`);
+
+defAnimal("owl","Owl","Bird","🦉",`
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+ <rect width="100" height="100" fill="#efe7d8"/>
+ <path d="M22 30 l10 14 l-14 0z" fill="#8a6a3e"/><path d="M78 30 l-10 14 l14 0z" fill="#8a6a3e"/>
+ <ellipse cx="50" cy="56" rx="32" ry="34" fill="#a87e48"/>
+ <ellipse cx="50" cy="64" rx="20" ry="22" fill="#d8be8e"/>
+ <circle cx="37" cy="46" r="14" fill="#fff"/><circle cx="63" cy="46" r="14" fill="#fff"/>
+ <circle cx="37" cy="46" r="8" fill="#3a2a14"/><circle cx="63" cy="46" r="8" fill="#3a2a14"/>
+ <circle cx="39" cy="44" r="2.5" fill="#fff"/><circle cx="65" cy="44" r="2.5" fill="#fff"/>
+ <path d="M50 50 l-5 8 h10 z" fill="#ff9f3c"/>
+ <path d="M34 82 l-4 8 M50 86 v8 M66 82 l4 8" stroke="#8a6a3e" stroke-width="5" stroke-linecap="round"/>
+</svg>`);
+
+defAnimal("flamingo","Flamingo","Bird","🦩",`
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+ <rect width="100" height="100" fill="#dff4f0"/>
+ <ellipse cx="52" cy="62" rx="24" ry="18" fill="#ff8fb3"/>
+ <path d="M40 60 q-6 -30 16 -34 q14 -2 10 10 q-3 8 -12 8 q-10 0 -8 18z" fill="#ff7aa6"/>
+ <circle cx="62" cy="30" r="7" fill="#ff7aa6"/>
+ <path d="M66 30 l12 4 l-12 4 q-3 -4 0 -8z" fill="#2b2f38"/>
+ <circle cx="63" cy="28" r="1.8" fill="#2b2f38"/>
+ <path d="M48 78 l-3 14 M58 78 l3 14" stroke="#ff8fb3" stroke-width="3.5" stroke-linecap="round"/>
+ <path d="M45 92 h-7 M61 92 h7" stroke="#ff8fb3" stroke-width="3.5" stroke-linecap="round"/>
+</svg>`);
+
+defAnimal("octopus","Octopus","Sea creature","🐙",`
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+ <rect width="100" height="100" fill="#cfeaf0"/>
+ <ellipse cx="50" cy="40" rx="28" ry="26" fill="#a05bd0"/>
+ <g stroke="#a05bd0" stroke-width="8" fill="none" stroke-linecap="round">
+  <path d="M30 58 q-12 14 -16 30"/><path d="M40 64 q-8 16 -10 28"/>
+  <path d="M50 66 q0 16 0 30"/><path d="M60 64 q8 16 10 28"/>
+  <path d="M70 58 q12 14 16 30"/>
+ </g>
+ <circle cx="40" cy="38" r="7" fill="#fff"/><circle cx="60" cy="38" r="7" fill="#fff"/>
+ <circle cx="41" cy="39" r="3.5" fill="#2b2f38"/><circle cx="59" cy="39" r="3.5" fill="#2b2f38"/>
+ <path d="M44 52 q6 5 12 0" stroke="#6a3a96" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+ <g fill="#c98fe6"><circle cx="22" cy="78" r="3"/><circle cx="34" cy="84" r="3"/><circle cx="66" cy="84" r="3"/><circle cx="78" cy="78" r="3"/></g>
+</svg>`);
+
+defAnimal("whale","Whale","Sea creature","🐋",`
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+ <rect width="100" height="100" fill="#cfe6f7"/>
+ <path d="M50 24 q4 -10 8 -2 q-2 4 -8 2z" fill="#bcdcf0"/>
+ <path d="M14 56 q6 -26 40 -26 q34 0 36 24 q-2 6 -10 6 l-10 8 q-22 8 -44 -2 q-12 -6 -12 -10z" fill="#4a82b8"/>
+ <path d="M82 54 q14 -8 14 4 q0 12 -14 6 q-3 -6 0 -10z" fill="#4a82b8"/>
+ <path d="M20 58 q24 12 50 4 q2 8 -4 12 q-22 8 -44 -2 q-6 -6 -2 -14z" fill="#cfe6f7"/>
+ <circle cx="34" cy="48" r="4" fill="#23384a"/><circle cx="35" cy="46.5" r="1.4" fill="#fff"/>
+ <path d="M22 50 q6 4 14 2" stroke="#23384a" stroke-width="2" fill="none" stroke-linecap="round"/>
+</svg>`);
+
+defAnimal("dolphin","Dolphin","Sea creature","🐬",`
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+ <rect width="100" height="100" fill="#cfeefb"/>
+ <path d="M16 60 q10 -34 44 -34 q22 0 30 12 q-14 -2 -22 6 q24 2 24 18 q-2 8 -10 6 q-8 -12 -24 -10 q-30 4 -42 -4z" fill="#5aa9d6"/>
+ <path d="M52 30 q6 -16 16 -10 q-4 8 -10 12 q-4 2 -6 -2z" fill="#4a98c4"/>
+ <path d="M20 60 q24 8 48 2 q-2 10 -12 12 q-24 4 -36 -14z" fill="#dff4ff"/>
+ <circle cx="40" cy="48" r="3.5" fill="#23384a"/><circle cx="41" cy="46.8" r="1.2" fill="#fff"/>
+ <path d="M24 44 q-8 0 -10 -4" stroke="#4a98c4" stroke-width="4" fill="none" stroke-linecap="round"/>
+ <path d="M50 56 q8 4 16 1" stroke="#3a7ba6" stroke-width="2" fill="none" stroke-linecap="round"/>
+</svg>`);
+
+defAnimal("turtle","Turtle","Reptile","🐢",`
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+ <rect width="100" height="100" fill="#e3f2e0"/>
+ <ellipse cx="20" cy="56" rx="11" ry="9" fill="#7bbf6a"/>
+ <circle cx="13" cy="54" r="2.5" fill="#234"/>
+ <g fill="#6aa85c"><rect x="26" y="68" width="9" height="14" rx="4"/><rect x="64" y="68" width="9" height="14" rx="4"/></g>
+ <ellipse cx="52" cy="56" rx="34" ry="27" fill="#3f8f4f"/>
+ <ellipse cx="52" cy="54" rx="26" ry="20" fill="#5fae5a"/>
+ <g fill="#cdebb0" stroke="#3f8f4f" stroke-width="1.5">
+  <path d="M52 38 l10 8 l-4 12 h-12 l-4 -12z"/>
+  <path d="M34 50 l10 -2 l2 12 l-10 4z"/><path d="M70 50 l-10 -2 l-2 12 l10 4z"/>
+  <path d="M44 70 l4 -6 h8 l4 6 l-8 4z"/>
+ </g>
+</svg>`);
+
+defAnimal("snake","Snake","Reptile","🐍",`
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+ <rect width="100" height="100" fill="#e8f0d8"/>
+ <path d="M78 78 q-44 6 -44 -18 q0 -20 18 -20 q14 0 14 12 q0 9 -10 9" fill="none" stroke="#6fae3a" stroke-width="13" stroke-linecap="round"/>
+ <path d="M78 78 q-44 6 -44 -18 q0 -20 18 -20 q14 0 14 12 q0 9 -10 9" fill="none" stroke="#8fce5a" stroke-width="6" stroke-linecap="round" stroke-dasharray="2 9"/>
+ <circle cx="50" cy="40" r="8" fill="#6fae3a"/>
+ <circle cx="47" cy="37" r="2" fill="#234"/><circle cx="53" cy="37" r="2" fill="#234"/>
+ <path d="M50 47 l0 7 l-3 -2 m3 2 l3 -2" stroke="#d23b3b" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+</svg>`);
+
+defAnimal("frog","Frog","Amphibian","🐸",`
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+ <rect width="100" height="100" fill="#e3f3df"/>
+ <circle cx="30" cy="30" r="13" fill="#5fbf4f"/><circle cx="70" cy="30" r="13" fill="#5fbf4f"/>
+ <circle cx="30" cy="30" r="7" fill="#fff"/><circle cx="70" cy="30" r="7" fill="#fff"/>
+ <circle cx="31" cy="31" r="3.5" fill="#1c2e16"/><circle cx="69" cy="31" r="3.5" fill="#1c2e16"/>
+ <ellipse cx="50" cy="58" rx="34" ry="28" fill="#62c451"/>
+ <ellipse cx="50" cy="64" rx="22" ry="16" fill="#9ee08c"/>
+ <path d="M30 60 q20 18 40 0" stroke="#2f7a2a" stroke-width="3" fill="none" stroke-linecap="round"/>
+ <circle cx="38" cy="56" r="2.5" fill="#2f7a2a"/><circle cx="62" cy="56" r="2.5" fill="#2f7a2a"/>
+ <path d="M16 82 q6 8 14 4 M84 82 q-6 8 -14 4" stroke="#5fbf4f" stroke-width="7" fill="none" stroke-linecap="round"/>
+</svg>`);
+
+defAnimal("butterfly","Butterfly","Insect","🦋",`
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+ <rect width="100" height="100" fill="#fbeaf6"/>
+ <path d="M50 50 q-30 -34 -40 -8 q-6 18 14 22 q18 4 26 -14z" fill="#ff8a4c"/>
+ <path d="M50 50 q30 -34 40 -8 q6 18 -14 22 q-18 4 -26 -14z" fill="#ff8a4c"/>
+ <path d="M50 50 q-26 24 -36 6 q-4 -16 16 -16 q14 0 20 10z" fill="#8a6bd6"/>
+ <path d="M50 50 q26 24 36 6 q4 -16 -16 -16 q-14 0 -20 10z" fill="#8a6bd6"/>
+ <g fill="#fff"><circle cx="24" cy="40" r="3"/><circle cx="76" cy="40" r="3"/><circle cx="30" cy="64" r="2.5"/><circle cx="70" cy="64" r="2.5"/></g>
+ <rect x="47" y="36" width="6" height="34" rx="3" fill="#3a2a14"/>
+ <path d="M50 36 q-6 -8 -12 -8 M50 36 q6 -8 12 -8" stroke="#3a2a14" stroke-width="2" fill="none" stroke-linecap="round"/>
+</svg>`);
+
+defAnimal("bee","Bee","Insect","🐝",`
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+ <rect width="100" height="100" fill="#fff6d6"/>
+ <ellipse cx="50" cy="58" rx="26" ry="30" fill="#f6c93a"/>
+ <g fill="#2b2620"><path d="M28 48 h44 v8 h-44z"/><path d="M30 64 h40 v8 h-40z"/><path d="M36 80 h28 v6 h-28z"/></g>
+ <ellipse cx="34" cy="40" rx="14" ry="11" fill="#86c5e8" opacity=".7"/>
+ <ellipse cx="66" cy="40" rx="14" ry="11" fill="#86c5e8" opacity=".7"/>
+ <circle cx="50" cy="30" r="14" fill="#2b2620"/>
+ <circle cx="44" cy="29" r="3" fill="#fff"/><circle cx="56" cy="29" r="3" fill="#fff"/>
+ <circle cx="44.5" cy="29.5" r="1.4" fill="#2b2620"/><circle cx="56.5" cy="29.5" r="1.4" fill="#2b2620"/>
+ <path d="M44 20 q-4 -8 -8 -8 M56 20 q4 -8 8 -8" stroke="#2b2620" stroke-width="2" fill="none" stroke-linecap="round"/>
+</svg>`);
+
+const ANIMAL_KEYS = Object.keys(A);
+
+/* ---------- QUESTION BANK ---------- */
+/* Each: q=question, a=options (correct is FIRST, shuffled at render), f=fun fact */
+const QUESTIONS = {
+ easy:[
+  {q:"Which animal is known as the King of the Jungle?",a:["Lion","Tiger","Bear","Elephant"],f:"Lions actually live on grassy savannahs, not jungles!"},
+  {q:"How many legs does a spider have?",a:["8","6","4","10"],f:"All spiders have 8 legs — insects only have 6."},
+  {q:"What do you call a baby dog?",a:["Puppy","Kitten","Cub","Calf"],f:"A group of puppies is called a litter."},
+  {q:"Which animal has a very long neck to reach tall trees?",a:["Giraffe","Zebra","Hippo","Camel"],f:"A giraffe's neck can be over 2 metres long!"},
+  {q:"What colour is a polar bear's fur?",a:["White (it looks white!)","Bright blue","Green","Pink"],f:"A polar bear's fur looks white, but its skin underneath is black!"},
+  {q:"What do bees make?",a:["Honey","Milk","Silk","Cheese"],f:"Bees visit thousands of flowers to make one jar of honey."},
+  {q:"Which of these animals can fly?",a:["Eagle","Penguin","Ostrich","Cow"],f:"Penguins and ostriches are birds, but they can't fly!"},
+  {q:"Which is the biggest animal on land?",a:["Elephant","Giraffe","Rhino","Hippo"],f:"African elephants can weigh as much as 6 cars."},
+  {q:"Which animal hops and carries its baby in a pouch?",a:["Kangaroo","Koala","Rabbit","Frog"],f:"A baby kangaroo is called a joey."},
+  {q:"What do you call a baby cat?",a:["Kitten","Puppy","Cub","Chick"],f:"Kittens are born with their eyes closed."},
+  {q:"Where do fish live?",a:["In water","In trees","In caves","In deserts"],f:"Fish breathe underwater using their gills."},
+  {q:"Which animal says 'moo'?",a:["Cow","Sheep","Pig","Horse"],f:"Cows have best friends and get stressed when separated!"},
+  {q:"Which animal is famous for its black and white stripes?",a:["Zebra","Lion","Camel","Bear"],f:"Every zebra's stripe pattern is different, like a fingerprint."},
+  {q:"What do you call a baby sheep?",a:["Lamb","Foal","Cub","Kit"],f:"Lambs can recognise their mother's bleat."}
+ ],
+ medium:[
+  {q:"Which is the fastest animal on land?",a:["Cheetah","Lion","Horse","Ostrich"],f:"A cheetah can sprint at about 110 km/h — but only for short bursts."},
+  {q:"What is a group of lions called?",a:["A pride","A pack","A herd","A flock"],f:"A pride can have up to 30 lions living together."},
+  {q:"Which animal sleeps about 20 hours a day and eats eucalyptus leaves?",a:["Koala","Panda","Sloth","Kangaroo"],f:"Eucalyptus leaves are so low in energy that koalas need lots of sleep."},
+  {q:"How many hearts does an octopus have?",a:["3","1","2","8"],f:"Two hearts pump blood to the gills and one to the rest of the body."},
+  {q:"What is the largest animal that has ever lived?",a:["Blue whale","Elephant","T. rex","Great white shark"],f:"A blue whale is bigger than any dinosaur that ever lived!"},
+  {q:"Which animal can change colour to blend into its surroundings?",a:["Chameleon","Frog","Snake","Rabbit"],f:"Chameleons also change colour to show their mood."},
+  {q:"A group of wolves is called a ___?",a:["Pack","Pride","Herd","School"],f:"Wolf packs are usually one family working together."},
+  {q:"Which of these mammals lays eggs?",a:["Platypus","Kangaroo","Bat","Dolphin"],f:"The platypus and the echidna are the only mammals that lay eggs."},
+  {q:"What do we call animals that eat ONLY plants?",a:["Herbivores","Carnivores","Omnivores","Predators"],f:"Cows, rabbits and elephants are all herbivores."},
+  {q:"Which big cat CANNOT roar?",a:["Cheetah","Lion","Tiger","Leopard"],f:"Cheetahs can't roar — but they can purr like a house cat!"},
+  {q:"Which animal is famous for never forgetting and having a great memory?",a:["Elephant","Goldfish","Chicken","Sheep"],f:"Elephants can remember water-holes and friends for many years."},
+  {q:"What is a baby kangaroo called?",a:["Joey","Cub","Pup","Kid"],f:"A newborn joey is only about the size of a jellybean."},
+  {q:"Which sea animal has eight arms and can squirt ink?",a:["Octopus","Shark","Dolphin","Seahorse"],f:"Octopuses squirt ink to hide while they escape."},
+  {q:"Which bird is famous for copying sounds and even human words?",a:["Parrot","Eagle","Owl","Robin"],f:"Some parrots can learn over 100 words."}
+ ],
+ expert:[
+  {q:"What is the only mammal that can truly fly (flap and stay up)?",a:["Bat","Flying squirrel","Sugar glider","Colugo"],f:"Flying squirrels only glide — bats are the one mammal that truly flies."},
+  {q:"Which animal has the strongest bite force ever measured?",a:["Saltwater crocodile","Great white shark","Lion","Hippo"],f:"A saltwater croc's bite has been measured stronger than a lion's by far."},
+  {q:"A group of crows is called a ___?",a:["Murder","Gaggle","Pack","Knot"],f:"Yes — 'a murder of crows' is the real name!"},
+  {q:"What is the fastest animal in the world when diving from the sky?",a:["Peregrine falcon","Cheetah","Eagle","Sailfish"],f:"A peregrine falcon dives at nearly 390 km/h — faster than a race car."},
+  {q:"Roughly how many times its own body weight can an ant lift?",a:["About 50 times","About 2 times","The same as itself","About 10,000 times"],f:"For its size, an ant is one of the strongest animals on Earth."},
+  {q:"Tiny animals that can survive even the vacuum of outer space are nicknamed ___?",a:["Water bears","Sea monkeys","Dust mites","Sea fleas"],f:"Water bears (tardigrades) can survive being frozen, boiled, AND in space."},
+  {q:"Which amphibian can regrow its legs, tail and even parts of its heart?",a:["Axolotl","Bullfrog","Cane toad","Tree frog"],f:"The axolotl is a superstar of regrowing body parts."},
+  {q:"An animal that is active mostly at night is called ___?",a:["Nocturnal","Diurnal","Aquatic","Migratory"],f:"Owls and bats are nocturnal; we are diurnal (active by day)."},
+  {q:"Which frog can freeze almost solid in winter and thaw back to life in spring?",a:["Wood frog","Poison dart frog","Bullfrog","Tree frog"],f:"The wood frog's heart even stops while it's frozen, then restarts!"},
+  {q:"A blue whale's heart is roughly the size of a ___?",a:["Small car","Basketball","Microwave","Football"],f:"A blue whale's heart can weigh around 180 kg."},
+  {q:"Which animal's stomach has FOUR parts to digest tough grass?",a:["Cow","Pig","Horse","Dog"],f:"Cows bring food back up to chew again — that's called chewing the cud."},
+  {q:"Which sea creature is actually a colony of tiny living animals?",a:["Coral","Jellyfish","Starfish","Sea cucumber"],f:"A coral reef is built by millions of tiny animals called polyps."},
+  {q:"Which insect does a 'waggle dance' to tell others where flowers are?",a:["Honeybee","Ant","Butterfly","Ladybird"],f:"The angle and length of the dance tell other bees the direction and distance."},
+  {q:"How does a snake mostly 'smell' the air around it?",a:["With its tongue","With its ears","With its tail","With its eyes"],f:"A snake flicks its forked tongue to taste scents in the air."}
+ ],
+ zoologist:[
+  {q:"What is the only group of primates that are venomous?",a:["Slow lorises","Tarsiers","Lemurs","Bush babies"],f:"The slow loris mixes venom from its arm with its saliva — the only venomous primate."},
+  {q:"Which animal has the largest eyes of any creature on Earth?",a:["Colossal squid","Blue whale","Ostrich","Giant clam"],f:"A colossal squid's eye can be about the size of a dinner plate (27 cm)."},
+  {q:"Which land mammal has the longest pregnancy of all?",a:["African elephant","Blue whale","Giraffe","Rhinoceros"],f:"An elephant is pregnant for about 22 months — nearly two years!"},
+  {q:"The okapi, with stripy legs, is the closest living relative of the ___?",a:["Giraffe","Zebra","Horse","Antelope"],f:"Despite the zebra-like stripes, the okapi is a cousin of the giraffe."},
+  {q:"Which living bird has the largest wingspan of all?",a:["Wandering albatross","Andean condor","Bald eagle","Marabou stork"],f:"Its wings can stretch about 3.5 metres tip to tip."},
+  {q:"A narwhal's long 'tusk' is really an enormous ___?",a:["Tooth","Horn","Nose","Bone"],f:"It's a giant canine tooth that can grow nearly 3 metres long."},
+  {q:"The pistol shrimp snaps its claw so fast it makes a bubble nearly as hot as the ___?",a:["Surface of the Sun","Inside of a fridge","Boiling kettle","Warm bath"],f:"The bubble briefly reaches thousands of degrees and stuns its prey."},
+  {q:"The word 'hippopotamus' comes from Greek words meaning ___?",a:["River horse","Big mouth","Mud monster","Fat pig"],f:"'Hippos' = horse and 'potamos' = river, so 'river horse'."},
+  {q:"Which is the only mammal that cannot jump at all?",a:["Elephant","Hippo","Rhino","Sloth"],f:"An elephant always keeps at least one foot on the ground."},
+  {q:"The axolotl keeps its baby features for its whole life. This is called ___?",a:["Neoteny","Metamorphosis","Hibernation","Migration"],f:"Neoteny means staying youthful — axolotls keep their feathery gills forever."},
+  {q:"The 'immortal jellyfish' can avoid dying by doing what?",a:["Turning back into a younger stage","Turning to stone","Splitting into two","Growing a shell"],f:"Turritopsis dohrnii can transform its old cells back into a young polyp."},
+  {q:"Which animal breathes through its skin as well as its lungs?",a:["Frog","Lizard","Snake","Crocodile"],f:"A frog's thin, moist skin lets oxygen pass straight into its blood."},
+  {q:"What is a baby eel called?",a:["Elver","Fry","Kit","Squab"],f:"Tiny see-through young eels are called elvers (or glass eels)."},
+  {q:"Which big cat is the only one that genuinely loves to swim?",a:["Tiger","Cheetah","Leopard","Lion"],f:"Tigers will happily soak in rivers to cool down."}
+ ]
+};
+
+const LEVELS = {
+ easy:    {name:"Easy",      color:"#2fb380", pts:10},
+ medium:  {name:"Medium",    color:"#2176b5", pts:20},
+ expert:  {name:"Expert",    color:"#7b51c4", pts:30},
+ zoologist:{name:"Zoologist 🎓",color:"#ff6f4d", pts:50}
+};
+
+const BADGES = [
+ {id:"first",   em:"🌟", name:"First Find",   desc:"Collect your first animal"},
+ {id:"fire",    em:"🔥", name:"On Fire",      desc:"Get a streak of 5"},
+ {id:"unstop",  em:"⚡", name:"Unstoppable",  desc:"Get a streak of 10"},
+ {id:"sharp",   em:"🎯", name:"Sharp Eye",    desc:"Guess with 4+ tiles still hidden"},
+ {id:"perfect", em:"💯", name:"Perfect Round",desc:"Get every question right in a round"},
+ {id:"zoo",     em:"🦉", name:"Brainy Boots", desc:"Answer a Zoologist question correctly"},
+ {id:"collect6",em:"📚", name:"Collector",    desc:"Collect 6 animals"},
+ {id:"champion",em:"👑", name:"Champion",     desc:"Collect every animal"}
+];
+
+/* ---------- STATE ---------- */
+let S = {
+ name:"", level:"easy", score:0, streak:0, bestStreak:0,
+ collected:[], badges:[]
+};
+let round = null; // current round state
+
+/* ---------- SAVE / LOAD ---------- */
+const SAVE_KEY = "mysteryAnimalQuiz.v1";
+function save(){
+ try{ localStorage.setItem(SAVE_KEY, JSON.stringify({
+   name:S.name, score:S.score, bestStreak:S.bestStreak,
+   collected:S.collected, badges:S.badges
+ })); }catch(e){}
+}
+function load(){
+ try{
+   const d = JSON.parse(localStorage.getItem(SAVE_KEY));
+   if(d){
+     S.name=d.name||""; S.score=d.score||0; S.bestStreak=d.bestStreak||0;
+     S.collected=d.collected||[]; S.badges=d.badges||[];
+   }
+ }catch(e){}
+}
+
+/* ---------- SOUND (Web Audio, no files) ---------- */
+let audioCtx=null, muted=false;
+function actx(){ if(!audioCtx){ try{audioCtx=new (window.AudioContext||window.webkitAudioContext)();}catch(e){} } return audioCtx; }
+function tone(freq,start,dur,type,vol){
+ const ac=actx(); if(!ac||muted) return;
+ const o=ac.createOscillator(), g=ac.createGain();
+ o.type=type||"sine"; o.frequency.value=freq;
+ o.connect(g); g.connect(ac.destination);
+ const t=ac.currentTime+start;
+ g.gain.setValueAtTime(0.0001,t);
+ g.gain.exponentialRampToValueAtTime(vol||0.18,t+0.02);
+ g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+ o.start(t); o.stop(t+dur+0.02);
+}
+const sfx={
+ correct(){ [0,1,2].forEach((i)=>tone([523,659,784][i],i*0.08,0.18,"triangle",0.2)); },
+ wrong(){ tone(180,0,0.22,"sawtooth",0.14); tone(120,0.12,0.22,"sawtooth",0.12); },
+ pop(){ tone(700,0,0.09,"square",0.12); },
+ guessWin(){ [523,659,784,1046,1318].forEach((f,i)=>tone(f,i*0.1,0.25,"triangle",0.2)); },
+ badge(){ [784,1046,1318,1568].forEach((f,i)=>tone(f,i*0.07,0.2,"sine",0.18)); },
+ click(){ tone(420,0,0.05,"sine",0.08); }
+};
+
+/* ---------- CONFETTI ---------- */
+const confettiCanvas=document.getElementById("confetti");
+const cctx=confettiCanvas.getContext("2d");
+let confettiParts=[], confettiRAF=null;
+function resizeCanvas(){ confettiCanvas.width=window.innerWidth; confettiCanvas.height=window.innerHeight; }
+window.addEventListener("resize",resizeCanvas); resizeCanvas();
+function confetti(power){
+ const n=power||90; const cols=["#ff6f91","#ffc93c","#2fb380","#3aa0e0","#8e6bd6","#ff914d"];
+ for(let i=0;i<n;i++){
+   confettiParts.push({
+     x:Math.random()*confettiCanvas.width, y:-20-Math.random()*confettiCanvas.height*0.3,
+     vx:(Math.random()-0.5)*4, vy:2+Math.random()*4, s:6+Math.random()*8,
+     col:cols[(Math.random()*cols.length)|0], rot:Math.random()*6, vr:(Math.random()-0.5)*0.3
+   });
+ }
+ if(!confettiRAF) loopConfetti();
+}
+function loopConfetti(){
+ cctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);
+ confettiParts.forEach(p=>{
+   p.x+=p.vx; p.y+=p.vy; p.vy+=0.05; p.rot+=p.vr;
+   cctx.save(); cctx.translate(p.x,p.y); cctx.rotate(p.rot);
+   cctx.fillStyle=p.col; cctx.fillRect(-p.s/2,-p.s/2,p.s,p.s*0.6); cctx.restore();
+ });
+ confettiParts=confettiParts.filter(p=>p.y<confettiCanvas.height+30);
+ if(confettiParts.length){ confettiRAF=requestAnimationFrame(loopConfetti); }
+ else { cctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height); confettiRAF=null; }
+}
+
+/* ---------- HELPERS ---------- */
+const $=id=>document.getElementById(id);
+function shuffle(arr){ const a=arr.slice(); for(let i=a.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function scorePop(txt){
+ const el=document.createElement("div"); el.className="score-pop"; el.textContent=txt;
+ document.body.appendChild(el); setTimeout(()=>el.remove(),1000);
+}
+
+/* ---------- HOME ---------- */
+function renderSavedStats(){
+ const box=$("savedStats");
+ box.innerHTML="";
+ if(S.score>0||S.collected.length>0){
+   box.innerHTML =
+     `<span class="pill">⭐ ${S.score} points</span>`+
+     `<span class="pill">📚 ${S.collected.length}/${ANIMAL_KEYS.length} animals</span>`+
+     `<span class="pill">🔥 best streak ${S.bestStreak}</span>`;
+ }
+ if(S.name) $("nameInput").value=S.name;
+}
+$("levelPicker").addEventListener("click",e=>{
+ const b=e.target.closest(".lvl"); if(!b) return;
+ sfx.click();
+ document.querySelectorAll(".lvl").forEach(x=>x.classList.remove("sel"));
+ b.classList.add("sel"); S.level=b.dataset.level;
+});
+$("startBtn").addEventListener("click",()=>{
+ actx(); // unlock audio on first user gesture
+ const nm=$("nameInput").value.trim();
+ S.name = nm || "Explorer";
+ save();
+ startGame();
+});
+$("resetLink").addEventListener("click",e=>{
+ e.preventDefault();
+ if(confirm("Reset all progress, animals and badges?")){
+   S.score=0;S.streak=0;S.bestStreak=0;S.collected=[];S.badges=[];
+   try{localStorage.removeItem(SAVE_KEY);}catch(err){}
+   renderSavedStats();
+ }
+});
+
+/* ---------- GAME / ROUND ---------- */
+function startGame(){
+ $("home").classList.add("hidden");
+ $("game").classList.remove("hidden");
+ updateTopbar();
+ newRound();
+}
+function updateTopbar(){
+ $("tbName").textContent=S.name;
+ const L=LEVELS[S.level];
+ const lc=$("tbLevel"); lc.textContent=L.name; lc.style.background=L.color;
+ $("tbScore").textContent="⭐ "+S.score;
+ $("tbStreak").textContent="🔥 "+S.streak;
+ $("tbColl").textContent="📚 "+S.collected.length+"/"+ANIMAL_KEYS.length;
+}
+
+function newRound(){
+ // choose a mystery animal: prefer one not yet collected
+ let pool = ANIMAL_KEYS.filter(k=>!S.collected.includes(k));
+ if(pool.length===0) pool = ANIMAL_KEYS.slice();
+ const animalKey = pool[(Math.random()*pool.length)|0];
+
+ // pick 6 questions from the chosen level
+ const qs = shuffle(QUESTIONS[S.level]).slice(0,6).map(q=>{
+   const opts = q.a.map((t,i)=>({text:t, correct:i===0}));
+   return {q:q.q, opts:shuffle(opts), f:q.f};
+ });
+
+ round = {
+   animalKey, qs, idx:0,
+   tilesGone:0, correctCount:0, answered:false, finished:false,
+   guessedOpen:false
+ };
+
+ // build reveal
+ $("revealSvg").innerHTML = A[animalKey].svg;
+ const tilesEl=$("tiles"); tilesEl.innerHTML="";
+ round.tileEls=[];
+ for(let i=0;i<12;i++){
+   const t=document.createElement("div"); t.className="tile"; t.textContent="?";
+   tilesEl.appendChild(t); round.tileEls.push(t);
+ }
+ round.tileOrder = shuffle([...Array(12).keys()]);
+ $("revealHint").textContent="Answer correctly to reveal the picture…";
+ renderDots();
+ renderQuestion();
+}
+
+function renderDots(){
+ const d=$("dots"); d.innerHTML="";
+ round.qs.forEach((q,i)=>{
+   const el=document.createElement("div"); el.className="dot";
+   if(q.result==="right") el.classList.add("right");
+   else if(q.result==="wrong") el.classList.add("wrong");
+   if(i===round.idx && !round.finished) el.classList.add("cur");
+   d.appendChild(el);
+ });
+}
+
+function renderQuestion(){
+ const q=round.qs[round.idx];
+ round.answered=false;
+ $("qText").textContent=q.q;
+ $("feedback").innerHTML="";
+ $("nextBtn").classList.add("hidden");
+ const box=$("opts"); box.innerHTML="";
+ q.opts.forEach(o=>{
+   const b=document.createElement("button");
+   b.className="opt"; b.textContent=o.text;
+   b.addEventListener("click",()=>answer(b,o));
+   box.appendChild(b);
+ });
+ renderDots();
+}
+
+function revealTiles(count){
+ for(let i=0;i<count && round.tilesGone<12;i++){
+   const idx=round.tileOrder[round.tilesGone];
+   round.tileEls[idx].classList.add("gone");
+   round.tilesGone++;
+   sfx.pop();
+ }
+ const left=12-round.tilesGone;
+ $("revealHint").textContent = left>0 ? `Keep going — ${left} pieces still hidden!` : "Picture revealed! Can you name it?";
+}
+
+function answer(btn,opt){
+ if(round.answered) return;
+ round.answered=true;
+ const q=round.qs[round.idx];
+ // disable all
+ document.querySelectorAll("#opts .opt").forEach(b=>b.disabled=true);
+
+ if(opt.correct){
+   btn.classList.add("right");
+   q.result="right";
+   round.correctCount++;
+   S.streak++; if(S.streak>S.bestStreak) S.bestStreak=S.streak;
+   const base=LEVELS[S.level].pts;
+   const bonus=(S.streak-1)*5;
+   const gained=base+bonus;
+   S.score+=gained;
+   sfx.correct();
+   scorePop("+"+gained+(bonus>0?" 🔥":""));
+   revealTiles(2);
+   let msg=`<b style="color:var(--good)">Correct! +${gained} points</b>`;
+   if(bonus>0) msg+=` <span style="color:#c23b5b">(streak bonus!)</span>`;
+   $("feedback").innerHTML=msg+`<span class="fact">💡 ${q.f}</span>`;
+   if(S.level==="zoologist") earnBadge("zoo");
+   if(S.streak>=5) earnBadge("fire");
+   if(S.streak>=10) earnBadge("unstop");
+ } else {
+   btn.classList.add("wrong");
+   q.result="wrong";
+   S.streak=0;
+   sfx.wrong();
+   // show correct one
+   document.querySelectorAll("#opts .opt").forEach(b=>{
+     const txt=b.textContent;
+     const corr=q.opts.find(o=>o.correct);
+     if(corr && txt===corr.text) b.classList.add("right");
+   });
+   $("feedback").innerHTML=`<b style="color:var(--bad)">Not quite!</b> <span class="fact">💡 ${q.f}</span>`;
+ }
+ updateTopbar(); save(); renderDots();
+ $("nextBtn").classList.remove("hidden");
+ $("nextBtn").textContent = (round.idx>=round.qs.length-1) ? "See the animal →" : "Next →";
+}
+
+$("nextBtn").addEventListener("click",()=>{
+ sfx.click();
+ if(round.idx>=round.qs.length-1){
+   endRound(false);
+ } else {
+   round.idx++;
+   renderQuestion();
+ }
+});
+
+/* ---------- GUESS THE MYSTERY ANIMAL ---------- */
+$("guessBtn").addEventListener("click",openGuess);
+function openGuess(){
+ sfx.click();
+ const correct=round.animalKey;
+ let others=shuffle(ANIMAL_KEYS.filter(k=>k!==correct)).slice(0,5);
+ const choices=shuffle([correct,...others]);
+ const modal=document.createElement("div"); modal.className="modal";
+ modal.innerHTML=`
+   <div class="modal-card">
+     <div class="modal-title">🤔 What's the mystery animal?</div>
+     <div class="modal-sub">${12-round.tilesGone} pieces are still hidden — guess now for a bigger bonus!</div>
+     <div class="guess-grid" id="guessGrid"></div>
+     <button class="ghostbtn" id="guessCancel" style="margin:14px auto 0;display:block;">Keep playing</button>
+   </div>`;
+ document.body.appendChild(modal);
+ const grid=modal.querySelector("#guessGrid");
+ choices.forEach(k=>{
+   const b=document.createElement("button");
+   b.className="guess-opt";
+   b.innerHTML=`<span class="ge">${A[k].emoji}</span> ${A[k].name}`;
+   b.addEventListener("click",()=>doGuess(k,b,modal));
+   grid.appendChild(b);
+ });
+ modal.querySelector("#guessCancel").addEventListener("click",()=>{sfx.click();modal.remove();});
+}
+function doGuess(key,btn,modal){
+ const correct=round.animalKey;
+ modal.querySelectorAll(".guess-opt").forEach(b=>b.disabled=true);
+ if(key===correct){
+   btn.classList.add("right");
+   const hidden=12-round.tilesGone;
+   const bonus=50+hidden*10;
+   S.score+=bonus;
+   sfx.guessWin(); confetti(120); scorePop("+"+bonus+" 🎉");
+   if(hidden>=4) earnBadge("sharp");
+   setTimeout(()=>{ modal.remove(); endRound(true,bonus); },700);
+ } else {
+   btn.classList.add("wrong");
+   S.streak=0; sfx.wrong(); updateTopbar();
+   const correctBtn=[...modal.querySelectorAll(".guess-opt")].find(b=>b.textContent.includes(A[correct].name));
+   setTimeout(()=>{ modal.remove(); }, 400);
+   // gentle consolation: reveal one more tile
+   revealTiles(1);
+ }
+ save();
+}
+
+/* ---------- END OF ROUND ---------- */
+function endRound(guessed,guessBonus){
+ round.finished=true;
+ // reveal everything
+ round.tileEls.forEach(t=>t.classList.add("gone")); round.tilesGone=12;
+ const key=round.animalKey;
+ const wasNew=!S.collected.includes(key);
+ if(wasNew){ S.collected.push(key); }
+ // badges
+ if(S.collected.length>=1) earnBadge("first");
+ if(S.collected.length>=6) earnBadge("collect6");
+ if(S.collected.length>=ANIMAL_KEYS.length) earnBadge("champion");
+ if(round.correctCount===round.qs.length) earnBadge("perfect");
+ updateTopbar(); save();
+
+ if(!guessed) confetti(70);
+
+ const a=A[key];
+ const modal=document.createElement("div"); modal.className="modal";
+ const perfect = round.correctCount===round.qs.length;
+ modal.innerHTML=`
+  <div class="modal-card round-result">
+    <div class="big-emoji">${a.emoji}</div>
+    <div class="modal-title">${guessed?"🎉 You guessed it!":"It was a "+a.name+"!"}</div>
+    <div class="modal-sub">
+      ${guessed?`Brilliant! You earned a <b>+${guessBonus}</b> guessing bonus.`:""}
+      ${wasNew?`<br><b style="color:var(--green-d)">✨ New animal added to your collection!</b>`:`<br>You've already collected this one.`}
+    </div>
+    <div style="background:#f3f8f6;border-radius:14px;padding:10px 14px;font-size:14px;color:#456;">
+      You got <b>${round.correctCount}/${round.qs.length}</b> questions right this round.${perfect?" 💯 Perfect!":""}
+    </div>
+    <div class="roundbtns">
+      <button class="nextbtn" id="rNext" style="box-shadow:0 5px 0 #176a4a;">▶ Next animal</button>
+      <button class="ghostbtn" id="rColl">📚 My collection</button>
+      <button class="ghostbtn" id="rHome">🏠 Finish</button>
+    </div>
+  </div>`;
+ document.body.appendChild(modal);
+ modal.querySelector("#rNext").addEventListener("click",()=>{sfx.click();modal.remove();newRound();});
+ modal.querySelector("#rColl").addEventListener("click",()=>{sfx.click();openCollection();});
+ modal.querySelector("#rHome").addEventListener("click",()=>{sfx.click();modal.remove();goHome();});
+}
+
+/* ---------- BADGES ---------- */
+function earnBadge(id){
+ if(S.badges.includes(id)) return;
+ S.badges.push(id); save();
+ const b=BADGES.find(x=>x.id===id);
+ sfx.badge(); confetti(60);
+ const t=document.createElement("div");
+ t.className="modal";
+ t.innerHTML=`<div class="modal-card" style="text-align:center;max-width:340px;">
+   <div style="font-size:54px;">${b.em}</div>
+   <div class="modal-title">Badge unlocked!</div>
+   <div class="modal-sub"><b>${b.name}</b><br>${b.desc}</div>
+   <button class="nextbtn" style="margin:0 auto;box-shadow:0 5px 0 #176a4a;">Yay!</button>
+ </div>`;
+ document.body.appendChild(t);
+ t.querySelector("button").addEventListener("click",()=>{sfx.click();t.remove();});
+ setTimeout(()=>{ if(t.parentNode) t.remove(); },4000);
+}
+
+/* ---------- COLLECTION ---------- */
+$("tbColl").addEventListener("click",openCollection);
+function openCollection(){
+ sfx.click();
+ const modal=document.createElement("div"); modal.className="modal";
+ let items="";
+ ANIMAL_KEYS.forEach(k=>{
+   const a=A[k]; const got=S.collected.includes(k);
+   items+=`<div class="coll-item ${got?"":"locked"}">
+     ${a.svg}
+     <div class="coll-name">${got?a.name:"???"}</div>
+     <div class="coll-cat">${got?a.cat:"locked"}</div>
+   </div>`;
+ });
+ let badges="";
+ BADGES.forEach(b=>{
+   const got=S.badges.includes(b.id);
+   badges+=`<div class="badge ${got?"":"locked"}" title="${b.desc}">
+     <span class="bem">${b.em}</span>${b.name}
+   </div>`;
+ });
+ modal.innerHTML=`
+  <div class="modal-card">
+    <div class="modal-title">📚 ${S.name}'s Collection</div>
+    <div class="modal-sub">${S.collected.length} of ${ANIMAL_KEYS.length} animals found · ${S.badges.length} of ${BADGES.length} badges</div>
+    <div class="coll-grid">${items}</div>
+    <h3 style="margin:18px 0 6px;text-align:center;">🏅 Badges</h3>
+    <div class="badge-grid">${badges}</div>
+    <button class="nextbtn" id="cClose" style="margin:18px auto 0;box-shadow:0 5px 0 #176a4a;">Back to game</button>
+  </div>`;
+ document.body.appendChild(modal);
+ modal.querySelector("#cClose").addEventListener("click",()=>{sfx.click();modal.remove();});
+ modal.addEventListener("click",e=>{ if(e.target===modal) modal.remove(); });
+}
+
+/* ---------- NAV ---------- */
+$("homeBtn").addEventListener("click",()=>{sfx.click();goHome();});
+function goHome(){
+ document.querySelectorAll(".modal").forEach(m=>m.remove());
+ $("game").classList.add("hidden");
+ $("home").classList.remove("hidden");
+ renderSavedStats();
+}
+$("muteBtn").addEventListener("click",()=>{
+ muted=!muted;
+ $("muteBtn").textContent=muted?"🔇":"🔊";
+ if(!muted) sfx.click();
+});
+
+/* ---------- INIT ---------- */
+load();
+renderSavedStats();
+// preselect saved level visuals default easy already selected
+</script>
+</body>
+</html>
+  
